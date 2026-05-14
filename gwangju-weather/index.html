@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>광주 날씨</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #74b9ff, #0984e3);
+      font-family: 'Segoe UI', sans-serif;
+      color: white;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(12px);
+      border-radius: 24px;
+      padding: 48px 56px;
+      text-align: center;
+      min-width: 320px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    }
+
+    .city { font-size: 1.2rem; opacity: 0.85; letter-spacing: 2px; }
+
+    .date { font-size: 0.9rem; opacity: 0.7; margin-top: 4px; }
+
+    .icon { font-size: 5rem; margin: 24px 0 8px; }
+
+    .temp { font-size: 4rem; font-weight: 700; }
+
+    .desc { font-size: 1.1rem; opacity: 0.9; margin-top: 8px; }
+
+    .details {
+      display: flex;
+      justify-content: space-around;
+      margin-top: 32px;
+      gap: 16px;
+    }
+
+    .detail-item { font-size: 0.85rem; opacity: 0.8; }
+    .detail-item span { display: block; font-size: 1.1rem; font-weight: 600; opacity: 1; margin-top: 4px; }
+
+    .error { color: #ff7675; font-size: 0.95rem; margin-top: 16px; }
+
+    .loading { opacity: 0.7; font-size: 1rem; margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="city">광주 (Gwangju)</div>
+    <div class="date" id="date"></div>
+    <div class="icon" id="icon">⏳</div>
+    <div class="temp" id="temp">--°C</div>
+    <div class="desc" id="desc">날씨를 불러오는 중...</div>
+    <div class="details">
+      <div class="detail-item">체감온도 <span id="feels">--°C</span></div>
+      <div class="detail-item">습도 <span id="humidity">--%</span></div>
+      <div class="detail-item">바람 <span id="wind">-- km/h</span></div>
+    </div>
+    <div class="error" id="error"></div>
+  </div>
+
+  <script>
+    const weatherCodes = {
+      113: ['☀️', '맑음'],
+      116: ['⛅', '구름 조금'],
+      119: ['☁️', '흐림'],
+      122: ['☁️', '잔뜩 흐림'],
+      143: ['🌫️', '안개'],
+      176: ['🌦️', '가끔 비'],
+      179: ['🌨️', '가끔 눈'],
+      182: ['🌧️', '진눈깨비'],
+      185: ['🌧️', '가벼운 진눈깨비'],
+      200: ['⛈️', '천둥번개'],
+      227: ['❄️', '눈보라'],
+      230: ['❄️', '강한 눈보라'],
+      248: ['🌫️', '안개'],
+      260: ['🌫️', '짙은 안개'],
+      263: ['🌦️', '가벼운 소나기'],
+      266: ['🌧️', '가벼운 비'],
+      281: ['🌧️', '언 이슬비'],
+      284: ['🌧️', '강한 언 이슬비'],
+      293: ['🌦️', '가벼운 비'],
+      296: ['🌧️', '비'],
+      299: ['🌧️', '소나기'],
+      302: ['🌧️', '강한 비'],
+      305: ['🌧️', '강한 소나기'],
+      308: ['🌧️', '매우 강한 비'],
+      311: ['🌧️', '언 비'],
+      314: ['🌧️', '강한 언 비'],
+      317: ['🌨️', '가벼운 진눈깨비'],
+      320: ['🌨️', '눈/진눈깨비'],
+      323: ['🌨️', '가벼운 눈'],
+      326: ['❄️', '눈'],
+      329: ['❄️', '중간 눈'],
+      332: ['❄️', '강한 눈'],
+      335: ['❄️', '강한 눈 소나기'],
+      338: ['❄️', '폭설'],
+      350: ['🌨️', '언 비/우박'],
+      353: ['🌦️', '가벼운 소나기'],
+      356: ['🌧️', '강한 소나기'],
+      359: ['🌧️', '폭우'],
+      362: ['🌨️', '가벼운 진눈깨비 소나기'],
+      365: ['🌨️', '진눈깨비 소나기'],
+      368: ['🌨️', '가벼운 눈 소나기'],
+      371: ['❄️', '눈 소나기'],
+      374: ['🌨️', '가벼운 우박'],
+      377: ['🌨️', '우박'],
+      386: ['⛈️', '뇌우'],
+      389: ['⛈️', '강한 뇌우'],
+      392: ['⛈️', '눈 뇌우'],
+      395: ['⛈️', '강한 눈 뇌우'],
+    };
+
+    function getWeatherInfo(code) {
+      return weatherCodes[code] || ['🌡️', '알 수 없음'];
+    }
+
+    function setDate() {
+      const now = new Date();
+      const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
+      document.getElementById('date').textContent = now.toLocaleDateString('ko-KR', options);
+    }
+
+    async function fetchWeather() {
+      try {
+        const res = await fetch('https://wttr.in/Gwangju,Korea?format=j1');
+        if (!res.ok) throw new Error('응답 오류');
+        const data = await res.json();
+
+        const current = data.current_condition[0];
+        const code = parseInt(current.weatherCode);
+        const [icon, desc] = getWeatherInfo(code);
+
+        document.getElementById('icon').textContent = icon;
+        document.getElementById('temp').textContent = `${current.temp_C}°C`;
+        document.getElementById('desc').textContent = desc;
+        document.getElementById('feels').textContent = `${current.FeelsLikeC}°C`;
+        document.getElementById('humidity').textContent = `${current.humidity}%`;
+        document.getElementById('wind').textContent = `${current.windspeedKmph} km/h`;
+      } catch (e) {
+        document.getElementById('icon').textContent = '❌';
+        document.getElementById('desc').textContent = '날씨 정보를 불러오지 못했습니다';
+        document.getElementById('error').textContent = '잠시 후 새로고침 해주세요.';
+      }
+    }
+
+    setDate();
+    fetchWeather();
+  </script>
+</body>
+</html>

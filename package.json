@@ -1,0 +1,26 @@
+{
+  "name": "claude_code_test",
+  "version": "1.0.0",
+  "description": "This repository documents my development practice projects using Claude Code and other AI-assisted tools.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/coldbr0358/ai-assisted-dev-lab.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/coldbr0358/ai-assisted-dev-lab/issues"
+  },
+  "homepage": "https://github.com/coldbr0358/ai-assisted-dev-lab#readme",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.96.0",
+    "dotenv": "^17.4.2"
+  }
+}

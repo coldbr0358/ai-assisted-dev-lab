@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>DEVSIGN — AWS 스터디 프로젝트</title>
+<style>
+*, *::before, *::after {
+  box-sizing: border-box; margin: 0; padding: 0;
+  -webkit-print-color-adjust: exact !important;
+  print-color-adjust: exact !important;
+}
+
+:root {
+  --blue-dark:  #1e3a8a;
+  --blue-main:  #1e40af;
+  --blue-mid:   #3b82f6;
+  --blue-light: #dbeafe;
+  --blue-pale:  #eff6ff;
+  --gray-2:     #94a3b8;
+  --gray-3:     #64748b;
+  --text:       #1e293b;
+}
+
+body {
+  font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', 'Nanum Gothic', sans-serif;
+  background: #e2e8f0;
+  color: var(--text);
+}
+
+.slide {
+  width: 960px;
+  min-height: 540px;
+  background: #fff;
+  margin: 32px auto;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 24px rgba(0,0,0,.12);
+  display: flex;
+  flex-direction: column;
+}
+.slide::before {
+  content: '';
+  display: block;
+  height: 5px;
+  background: linear-gradient(90deg, var(--blue-dark) 0%, var(--blue-mid) 100%);
+}
+.page-num {
+  position: absolute;
+  bottom: 14px; right: 20px;
+  font-size: 11px; color: var(--gray-2); font-weight: 600;
+}
+
+/* 표지 */
+.slide-cover {
+  background: linear-gradient(145deg, #0f2461 0%, #1e40af 55%, #3b82f6 100%);
+}
+.slide-cover::before { height: 4px; background: rgba(255,255,255,.2); }
+.cover-bg {
+  position: absolute; inset: 0;
+  opacity: .05;
+  font-family: 'Consolas', monospace;
+  font-size: 12.5px; line-height: 1.9; color: #fff;
+  padding: 20px 28px; overflow: hidden;
+  pointer-events: none; white-space: pre;
+}
+.cover-body {
+  position: relative; z-index: 1;
+  flex: 1;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 40px 60px 40px;
+  text-align: center;
+}
+.cover-badge {
+  display: inline-block;
+  background: rgba(255,255,255,.18);
+  border: 1px solid rgba(255,255,255,.35);
+  color: #fff; font-size: 12px; padding: 4px 18px;
+  border-radius: 20px; letter-spacing: 2px; margin-bottom: 20px;
+}
+.cover-title { font-size: 33px; font-weight: 800; color: #fff; line-height: 1.25; margin-bottom: 8px; }
+.cover-sub   { font-size: 15px; color: rgba(255,255,255,.78); margin-bottom: 34px; }
+.cover-team  { display: flex; gap: 18px; }
+.team-chip {
+  background: rgba(255,255,255,.15);
+  border: 1px solid rgba(255,255,255,.3);
+  color: #fff; font-size: 13.5px; font-weight: 600;
+  padding: 8px 22px; border-radius: 30px;
+}
+
+/* 공통 헤더 */
+.slide-header {
+  padding: 26px 40px 14px;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex; align-items: flex-end; gap: 12px;
+}
+.slide-header .icon { font-size: 24px; line-height: 1; }
+.slide-header h2 { font-size: 20px; font-weight: 800; color: var(--blue-dark); }
+.slide-header .en {
+  font-size: 11px; color: var(--gray-2); font-weight: 600;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  padding-bottom: 2px; margin-left: 4px;
+}
+.slide-body { flex: 1; padding: 20px 40px 28px; }
+
+/* 카드 4개 */
+.cards-4 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; height: 100%; }
+.card {
+  background: var(--blue-pale); border: 1.5px solid var(--blue-light);
+  border-radius: 10px; padding: 15px 18px;
+  display: flex; flex-direction: column; gap: 5px;
+}
+.card .c-icon  { font-size: 21px; }
+.card .c-title { font-size: 13.5px; font-weight: 700; color: var(--blue-dark); }
+.card .c-desc  { font-size: 12px; color: var(--gray-3); line-height: 1.6; }
+
+/* 상태 리스트 */
+.status-list { display: flex; flex-direction: column; gap: 11px; }
+.status-item {
+  display: flex; align-items: flex-start; gap: 14px;
+  padding: 13px 18px; border-radius: 10px;
+  border-left: 4px solid var(--blue-mid);
+  background: var(--blue-pale);
+}
+.status-item.warn { border-left-color: #f59e0b; background: #fffbeb; }
+.status-item .s-icon  { font-size: 20px; flex-shrink: 0; margin-top: 1px; }
+.status-item .s-title { font-size: 13.5px; font-weight: 700; color: var(--blue-dark); margin-bottom: 3px; }
+.status-item.warn .s-title { color: #92400e; }
+.status-item .s-desc  { font-size: 12px; color: var(--gray-3); line-height: 1.55; }
+
+/* 학습 내용 4열 */
+.learn-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; height: 100%; }
+.learn-col { border-radius: 10px; overflow: hidden; border: 1px solid #e2e8f0; }
+.learn-col .l-head {
+  padding: 9px 12px; font-size: 12.5px; font-weight: 800;
+  display: flex; align-items: center; gap: 6px;
+}
+.learn-col.js     .l-head { background: #fef9c3; color: #854d0e; }
+.learn-col.node   .l-head { background: #dcfce7; color: #166534; }
+.learn-col.react  .l-head { background: #dbeafe; color: #1e3a8a; }
+.learn-col.aws    .l-head { background: #fce7f3; color: #9d174d; }
+.learn-col ul { list-style: none; padding: 10px 12px; background: #fff; }
+.learn-col ul li {
+  font-size: 11.5px; color: var(--gray-3);
+  padding: 4px 0; border-bottom: 1px solid #f1f5f9;
+  display: flex; align-items: center; gap: 5px;
+}
+.learn-col ul li:last-child { border-bottom: none; }
+.learn-col ul li::before { content: '\203A'; color: var(--blue-mid); font-weight: 700; }
+
+/* 개발 흐름 */
+.flow-list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.flow-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 16px; border-radius: 8px;
+  background: var(--blue-pale); border: 1px solid var(--blue-light);
+}
+.f-check {
+  width: 26px; height: 26px; border-radius: 50%;
+  background: var(--blue-main); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; flex-shrink: 0;
+}
+.f-num {
+  width: 26px; height: 26px; border-radius: 50%;
+  background: #e2e8f0; color: var(--gray-3);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; flex-shrink: 0;
+}
+.f-text { font-size: 13px; font-weight: 600; color: var(--text); }
+.f-sub  { font-size: 11px; color: var(--gray-2); }
+
+/* 간트 차트 */
+.gantt { width: 100%; border-collapse: collapse; font-size: 12px; }
+.gantt th {
+  background: var(--blue-dark); color: #fff;
+  padding: 8px 10px; text-align: center;
+  font-weight: 600; font-size: 11.5px;
+}
+.gantt th.task-col { text-align: left; width: 168px; }
+.gantt td {
+  border: 1px solid #e2e8f0;
+  padding: 9px 10px; text-align: center;
+  font-size: 11.5px; color: var(--gray-3);
+}
+.gantt td.task-name {
+  text-align: left; font-weight: 600; color: var(--text);
+  background: #f8fafc; border-right: 2px solid #e2e8f0;
+}
+.gantt td.done  { background: var(--blue-light); color: var(--blue-dark); font-weight: 700; }
+.gantt td.done::after  { content: ' \2713'; }
+.gantt td.doing { background: #bfdbfe; color: var(--blue-dark); font-weight: 700; }
+.gantt td.doing::after { content: ' \25BA'; }
+.gantt-legend { display: flex; gap: 18px; margin-top: 10px; font-size: 11.5px; color: var(--gray-3); }
+.legend-dot {
+  display: inline-block; width: 12px; height: 12px;
+  border-radius: 2px; margin-right: 5px; vertical-align: middle;
+}
+
+/* 향후 계획 */
+.plan-list { display: flex; flex-direction: column; gap: 11px; }
+.plan-item {
+  display: flex; align-items: flex-start; gap: 14px;
+  padding: 12px 18px; border-radius: 10px;
+  background: var(--blue-pale); border: 1px solid var(--blue-light);
+}
+.p-num {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--blue-main); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700; flex-shrink: 0;
+}
+.p-text { font-size: 13px; font-weight: 600; color: var(--text); }
+.p-sub  { font-size: 11.5px; color: var(--gray-3); margin-top: 2px; }
+.closing {
+  margin-top: 16px; padding: 13px 20px;
+  background: var(--blue-dark); border-radius: 10px;
+  color: #fff; font-size: 13.5px; font-weight: 600;
+  text-align: center; letter-spacing: .3px;
+}
+
+/* 인쇄 */
+@media print {
+  body { background: #fff; }
+  .slide {
+    width: 100%; min-height: 0;
+    height: 100vh; margin: 0;
+    box-shadow: none;
+    page-break-after: always;
+    page-break-inside: avoid;
+  }
+  @page { size: A4 landscape; margin: 0; }
+}
+</style>
+</head>
+<body>
+
+<!-- SLIDE 1: 표지 -->
+<div class="slide slide-cover">
+  <div class="cover-bg">aws ec2 create-instance \
+  --image-id ami-0c2d3e23e757b5d84 \
+  --instance-type t2.micro \
+  --key-name devsign-key
+
+aws s3 mb s3://devsign-study-bucket
+aws s3 cp ./index.html s3://devsign-study-bucket/
+
+const express = require('express');
+const app = express();
+app.listen(3000, () => {
+  console.log('server running on EC2');
+});</div>
+  <div class="cover-body">
+    <div class="cover-badge">DEVSIGN 2026-1</div>
+    <div class="cover-title">AWS 스터디 프로젝트</div>
+    <div class="cover-sub">2026년 1학기 &nbsp;·&nbsp; 중간 진행 발표</div>
+    <div class="cover-team">
+      <div class="team-chip">이서린</div>
+      <div class="team-chip">임찬형</div>
+      <div class="team-chip">우다빈</div>
+    </div>
+  </div>
+  <div class="page-num" style="color:rgba(255,255,255,.35);">01 / 07</div>
+</div>
+
+
+<!-- SLIDE 2: 스터디 개요 -->
+<div class="slide">
+  <div class="slide-header">
+    <span class="icon">📋</span>
+    <h2>스터디 개요</h2>
+    <span class="en">Study Overview</span>
+  </div>
+  <div class="slide-body">
+    <div class="cards-4">
+      <div class="card">
+        <div class="c-icon">☁️</div>
+        <div class="c-title">AWS 실습 중심 스터디</div>
+        <div class="c-desc">이론에 그치지 않고, 직접 AWS 서비스를 사용하며 배우는 것을 목표로 합니다.</div>
+      </div>
+      <div class="card">
+        <div class="c-icon">🌐</div>
+        <div class="c-title">웹사이트 직접 배포</div>
+        <div class="c-desc">S3 정적 호스팅, EC2 서버 배포 등 실제 웹사이트를 올려보는 경험을 쌓습니다.</div>
+      </div>
+      <div class="card">
+        <div class="c-icon">🧱</div>
+        <div class="c-title">풀스택 기반 기술 학습</div>
+        <div class="c-desc">React, Node.js 등 배포에 필요한 기술을 함께 학습해 AWS와 연결하는 것이 목표입니다.</div>
+      </div>
+      <div class="card">
+        <div class="c-icon">🤝</div>
+        <div class="c-title">팀 기반 협업 진행</div>
+        <div class="c-desc">각자 학습한 내용을 공유하며 팀 단위로 진행 상황을 맞춰가고 있습니다.</div>
+      </div>
+    </div>
+  </div>
+  <div class="page-num">02 / 07</div>
+</div>
+
+
+<!-- SLIDE 3: 현재 진행 상황 -->
+<div class="slide">
+  <div class="slide-header">
+    <span class="icon">📊</span>
+    <h2>현재 진행 상황</h2>
+    <span class="en">Current Status</span>
+  </div>
+  <div class="slide-body">
+    <div class="status-list">
+      <div class="status-item warn">
+        <div class="s-icon">📅</div>
+        <div class="s-body">
+          <div class="s-title">일정 일부 조정</div>
+          <div class="s-desc">유닉스 시험 일정과 겹치면서 실습 착수가 다소 늦어졌습니다. 현재는 학습 위주로 진행 중입니다.</div>
+        </div>
+      </div>
+      <div class="status-item">
+        <div class="s-icon">🎓</div>
+        <div class="s-body">
+          <div class="s-title">인프런 강의 수강 중</div>
+          <div class="s-desc">React, JavaScript, Node.js, AWS 관련 강의를 수강하며 배포에 필요한 기술 기반을 쌓고 있습니다.</div>
+        </div>
+      </div>
+      <div class="status-item">
+        <div class="s-icon">⚙️</div>
+        <div class="s-body">
+          <div class="s-title">개발 환경 구성 완료</div>
+          <div class="s-desc">VS Code 설정, GitHub 연동, React 프로젝트 생성까지 기본 환경은 갖춰진 상태입니다.</div>
+        </div>
+      </div>
+      <div class="status-item">
+        <div class="s-icon">🔍</div>
+        <div class="s-body">
+          <div class="s-title">AWS 구조 파악 중</div>
+          <div class="s-desc">EC2, S3, IAM 등 주요 서비스의 역할과 배포 흐름을 조사하며 방향을 정리하고 있습니다.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="page-num">03 / 07</div>
+</div>
+
+
+<!-- SLIDE 4: 학습 진행 내용 -->
+<div class="slide">
+  <div class="slide-header">
+    <span class="icon">💻</span>
+    <h2>학습 진행 내용</h2>
+    <span class="en">Learning Progress</span>
+  </div>
+  <div class="slide-body">
+    <div class="learn-grid">
+      <div class="learn-col js">
+        <div class="l-head">🟨 JavaScript</div>
+        <ul>
+          <li>변수와 자료형</li>
+          <li>함수와 객체</li>
+          <li>배열 메서드</li>
+          <li>비동기 처리</li>
+          <li>Promise / Async Await</li>
+        </ul>
+      </div>
+      <div class="learn-col node">
+        <div class="l-head">🟩 Node.js</div>
+        <ul>
+          <li>Node.js 환경 설정</li>
+          <li>모듈 시스템</li>
+          <li>라이브러리 사용</li>
+        </ul>
+      </div>
+      <div class="learn-col react">
+        <div class="l-head">🔵 React</div>
+        <ul>
+          <li>Component 구조</li>
+          <li>Props / State</li>
+          <li>Hooks · useEffect</li>
+          <li>Context API</li>
+          <li>React Router</li>
+        </ul>
+      </div>
+      <div class="learn-col aws">
+        <div class="l-head">🟠 AWS 기초</div>
+        <ul>
+          <li>S3 버킷 · 정적 호스팅</li>
+          <li>EC2 인스턴스 개념</li>
+          <li>IAM 권한 구조</li>
+          <li>배포 흐름 파악</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="page-num">04 / 07</div>
+</div>
+
+
+<!-- SLIDE 5: 준비 흐름 -->
+<div class="slide">
+  <div class="slide-header">
+    <span class="icon">🔧</span>
+    <h2>현재까지 준비한 흐름</h2>
+    <span class="en">Preparation Flow</span>
+  </div>
+  <div class="slide-body">
+    <div class="flow-list">
+      <div class="flow-item">
+        <div class="f-check">✓</div>
+        <div>
+          <div class="f-text">VS Code 개발 환경 설정</div>
+          <div class="f-sub">확장 프로그램, 터미널 구성 완료</div>
+        </div>
+      </div>
+      <div class="flow-item">
+        <div class="f-check">✓</div>
+        <div>
+          <div class="f-text">GitHub 연동</div>
+          <div class="f-sub">원격 저장소 연결 및 기본 사용법 학습</div>
+        </div>
+      </div>
+      <div class="flow-item">
+        <div class="f-check">✓</div>
+        <div>
+          <div class="f-text">React 프로젝트 생성</div>
+          <div class="f-sub">컴포넌트 기반 구조 파악</div>
+        </div>
+      </div>
+      <div class="flow-item">
+        <div class="f-check">✓</div>
+        <div>
+          <div class="f-text">상태 관리 · 라우팅 학습</div>
+          <div class="f-sub">useState, Context API, React Router</div>
+        </div>
+      </div>
+      <div class="flow-item">
+        <div class="f-check">✓</div>
+        <div>
+          <div class="f-text">AWS S3 정적 배포 실습</div>
+          <div class="f-sub">버킷 생성, 호스팅 설정, URL 확인</div>
+        </div>
+      </div>
+      <div class="flow-item">
+        <div class="f-check">✓</div>
+        <div>
+          <div class="f-text">IAM 액세스 키 · 권한 구조 파악</div>
+          <div class="f-sub">보안 자격증명 발급 및 적용</div>
+        </div>
+      </div>
+      <div class="flow-item">
+        <div class="f-check">✓</div>
+        <div>
+          <div class="f-text">EC2 · S3 개념 조사</div>
+          <div class="f-sub">서버 인스턴스와 스토리지 역할 이해</div>
+        </div>
+      </div>
+      <div class="flow-item">
+        <div class="f-num">8</div>
+        <div>
+          <div class="f-text">EC2 서버 배포 설계 (예정)</div>
+          <div class="f-sub">Node.js 서버 연동 및 실전 배포 준비</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="page-num">05 / 07</div>
+</div>
+
+
+<!-- SLIDE 6: 세부 일정 -->
+<div class="slide">
+  <div class="slide-header">
+    <span class="icon">📅</span>
+    <h2>세부 일정</h2>
+    <span class="en">Project Schedule</span>
+  </div>
+  <div class="slide-body">
+    <table class="gantt">
+      <thead>
+        <tr>
+          <th class="task-col">항목</th>
+          <th>4월말</th>
+          <th>5월초</th>
+          <th>5월말</th>
+          <th>6월초</th>
+          <th>6월말</th>
+          <th>7월초</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="task-name">⚛️ React · JS 기초 학습</td>
+          <td class="done">진행</td>
+          <td class="done">진행</td>
+          <td class="doing">진행 중</td>
+          <td></td><td></td><td></td>
+        </tr>
+        <tr>
+          <td class="task-name">☁️ AWS S3 실습</td>
+          <td></td>
+          <td class="done">시작</td>
+          <td class="doing">진행 중</td>
+          <td></td><td></td><td></td>
+        </tr>
+        <tr>
+          <td class="task-name">🌐 웹사이트 제작</td>
+          <td></td><td></td>
+          <td class="doing">착수</td>
+          <td class="doing">진행 중</td>
+          <td></td><td></td>
+        </tr>
+        <tr>
+          <td class="task-name">🟩 Node.js · 서버 기초</td>
+          <td></td><td></td><td></td>
+          <td class="doing">예정</td>
+          <td class="doing">예정</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="task-name">🚀 EC2 배포 · 도메인 연결</td>
+          <td></td><td></td><td></td><td></td>
+          <td class="doing">예정</td>
+          <td class="doing">완료 목표</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="gantt-legend">
+      <span><span class="legend-dot" style="background:#dbeafe;border:1px solid #93c5fd;"></span>완료</span>
+      <span><span class="legend-dot" style="background:#bfdbfe;border:1px solid #60a5fa;"></span>진행 중 · 예정</span>
+    </div>
+  </div>
+  <div class="page-num">06 / 07</div>
+</div>
+
+
+<!-- SLIDE 7: 향후 계획 -->
+<div class="slide">
+  <div class="slide-header">
+    <span class="icon">🚀</span>
+    <h2>향후 계획 및 마무리</h2>
+    <span class="en">Next Steps</span>
+  </div>
+  <div class="slide-body">
+    <div class="plan-list">
+      <div class="plan-item">
+        <div class="p-num">1</div>
+        <div>
+          <div class="p-text">React 기반 웹사이트 완성</div>
+          <div class="p-sub">학습한 컴포넌트 구조와 상태 관리를 실제 프로젝트에 적용합니다.</div>
+        </div>
+      </div>
+      <div class="plan-item">
+        <div class="p-num">2</div>
+        <div>
+          <div class="p-text">AWS EC2 서버 배포</div>
+          <div class="p-sub">Node.js 서버를 EC2에 올려 24시간 접속 가능한 환경을 구성합니다.</div>
+        </div>
+      </div>
+      <div class="plan-item">
+        <div class="p-num">3</div>
+        <div>
+          <div class="p-text">도메인 연결 및 마무리</div>
+          <div class="p-sub">도메인을 연결해 실제 서비스처럼 접속할 수 있는 웹사이트를 완성합니다.</div>
+        </div>
+      </div>
+    </div>
+    <div class="closing">
+      S3 정적 배포부터 EC2 서버 배포까지 — AWS 실습을 통해 배포 전 과정을 직접 경험하는 것이 이번 스터디의 목표입니다.
+    </div>
+  </div>
+  <div class="page-num">07 / 07</div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>HTML → AWS S3 — 무엇이 생성되고 왜 URL이 만들어지는가</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+  font-size: 13px;
+  line-height: 1.8;
+  color: #111;
+  background: #fff;
+  padding: 36px 52px;
+  max-width: 820px;
+  margin: 0 auto;
+}
+header {
+  border-bottom: 3px solid #e94560;
+  padding-bottom: 14px;
+  margin-bottom: 24px;
+}
+header h1 { font-size: 21px; color: #0f3460; }
+header .sub { font-size: 12px; color: #555; margin-top: 4px; }
+
+.section { margin: 24px 0; }
+.section-title {
+  font-size: 11.5px;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #e94560;
+  margin-bottom: 10px;
+  border-bottom: 1px solid #f0d0d5;
+  padding-bottom: 4px;
+}
+
+/* 흐름 다이어그램 */
+.flow {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  margin: 12px 0;
+  font-size: 12px;
+}
+.flow-box {
+  flex: 1;
+  border: 1.5px solid #c5d3ff;
+  border-radius: 6px;
+  padding: 10px 12px;
+  background: #f8f9ff;
+  text-align: center;
+}
+.flow-box strong { display: block; font-size: 12.5px; color: #0f3460; margin-bottom: 3px; }
+.flow-box span { font-size: 11px; color: #555; }
+.flow-arrow {
+  display: flex;
+  align-items: center;
+  padding: 0 6px;
+  color: #e94560;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+/* 단계 카드 */
+.steps { display: flex; flex-direction: column; gap: 8px; }
+.step-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  border: 1px solid #e8e8e8;
+  border-radius: 6px;
+  padding: 10px 14px;
+  background: #fafafa;
+}
+.step-num {
+  flex-shrink: 0;
+  width: 24px; height: 24px;
+  background: #e94560; color: #fff;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11.5px; font-weight: bold;
+}
+.step-body { flex: 1; }
+.step-body .cmd {
+  font-family: 'Consolas', monospace;
+  font-size: 11px;
+  background: #1e1e2e;
+  color: #cdd6f4;
+  padding: 3px 8px;
+  border-radius: 3px;
+  display: inline-block;
+  margin: 3px 0;
+}
+.step-body .result {
+  font-size: 11.5px;
+  color: #1b5e20;
+  background: #e8f5e9;
+  border-left: 3px solid #4caf50;
+  padding: 3px 8px;
+  margin-top: 4px;
+  border-radius: 0 3px 3px 0;
+}
+
+code {
+  background: #f4f4f4;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  padding: 1px 5px;
+  font-family: 'Consolas', monospace;
+  font-size: 11.5px;
+  color: #c0392b;
+}
+
+/* URL 원리 박스 */
+.url-breakdown {
+  background: #fff8e1;
+  border: 1.5px solid #ffc107;
+  border-radius: 8px;
+  padding: 14px 18px;
+  margin: 12px 0;
+  font-size: 12.5px;
+}
+.url-breakdown .url-line {
+  font-family: 'Consolas', monospace;
+  font-size: 12px;
+  background: #0f3460;
+  color: #fff;
+  padding: 8px 14px;
+  border-radius: 4px;
+  margin-bottom: 12px;
+  word-break: break-all;
+}
+.url-part { display: flex; gap: 10px; align-items: baseline; margin: 4px 0; font-size: 12px; }
+.url-part .tag {
+  flex-shrink: 0;
+  background: #e94560; color: #fff;
+  font-size: 10px; padding: 1px 7px; border-radius: 10px;
+  font-weight: bold;
+}
+
+/* 명령어 카드 */
+.cmd-row { display: flex; gap: 14px; margin-top: 10px; }
+.card { flex: 1; border-radius: 8px; padding: 12px 14px; }
+.card-on  { background: #e8f5e9; border: 2px solid #4caf50; }
+.card-off { background: #fdecea; border: 2px solid #e57373; }
+.card .label { font-weight: bold; font-size: 12px; margin-bottom: 6px; }
+.card pre {
+  font-family: 'Consolas', monospace;
+  font-size: 13px;
+  font-weight: bold;
+  padding: 7px 10px;
+  border-radius: 4px;
+  margin-bottom: 5px;
+}
+.card-on  pre { background: #2e7d32; color: #fff; }
+.card-off pre { background: #b71c1c; color: #fff; }
+.card .desc { font-size: 11.5px; color: #444; }
+
+.info {
+  background: #f0f4ff;
+  border-left: 4px solid #5c6bc0;
+  padding: 10px 14px;
+  font-size: 12px;
+  border-radius: 0 4px 4px 0;
+  margin: 10px 0;
+}
+
+footer {
+  margin-top: 28px;
+  padding-top: 12px;
+  border-top: 1px solid #eee;
+  font-size: 11px;
+  color: #888;
+  text-align: center;
+}
+
+@media print {
+  body { padding: 20px 28px; }
+  .flow, .cmd-row { flex-wrap: nowrap; }
+  .step-row, .url-breakdown, .card { page-break-inside: avoid; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>HTML → AWS S3 — 무엇이 생성되고 왜 URL이 만들어지는가</h1>
+  <div class="sub">deploy.js가 AWS에 실제로 한 일과 URL 생성 원리</div>
+</header>
+
+<!-- ── A. 전체 흐름 ── -->
+<div class="section">
+  <div class="section-title">A. 전체 구조</div>
+  <div class="flow">
+    <div class="flow-box">
+      <strong>로컬 PC</strong>
+      <span>ai_clean_check.html<br>deploy.js</span>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box">
+      <strong>AWS S3 버킷</strong>
+      <span>파일 저장소<br>+ 웹서버 역할</span>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box">
+      <strong>AWS DNS</strong>
+      <span>버킷명으로<br>URL 자동 부여</span>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box">
+      <strong>브라우저</strong>
+      <span>전 세계 누구나<br>URL로 접속</span>
+    </div>
+  </div>
+</div>
+
+<!-- ── B. deploy.js가 한 일 ── -->
+<div class="section">
+  <div class="section-title">B. deploy.js가 AWS에서 실제로 한 일 (5단계)</div>
+  <div class="steps">
+
+    <div class="step-row">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>S3 버킷 생성</strong> — AWS에 이름이 있는 저장 공간을 만듦
+        <div class="cmd">CreateBucketCommand → 버킷명: ai-clean-check-2026 / 리전: 서울(ap-northeast-2)</div>
+        <div class="result">결과: AWS 서버 어딘가에 "ai-clean-check-2026"라는 저장공간이 생성됨</div>
+      </div>
+    </div>
+
+    <div class="step-row">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>퍼블릭 액세스 차단 해제</strong> — 기본적으로 S3는 외부 접근을 막아둠
+        <div class="cmd">PutPublicAccessBlockCommand → BlockPublicPolicy: false</div>
+        <div class="result">결과: 인터넷에서 이 버킷에 접근 가능한 상태로 전환</div>
+      </div>
+    </div>
+
+    <div class="step-row">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>정적 웹 호스팅 활성화</strong> — S3를 단순 저장소가 아닌 웹서버처럼 동작하도록 설정
+        <div class="cmd">PutBucketWebsiteCommand → IndexDocument: ai_clean_check.html</div>
+        <div class="result">
+          결과: AWS가 이 버킷에 <strong>전용 웹 주소(URL)를 자동으로 부여</strong><br>
+          → 이 단계에서 URL이 생성됨
+        </div>
+      </div>
+    </div>
+
+    <div class="step-row">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>버킷 정책 적용</strong> — "누구나 파일을 읽을 수 있다"는 권한 규칙 등록
+        <div class="cmd">PutBucketPolicyCommand → s3:GetObject / Principal: "*"</div>
+        <div class="result">결과: 인터넷의 모든 사람이 파일 읽기(다운로드·열기) 가능. 쓰기·삭제는 불가</div>
+      </div>
+    </div>
+
+    <div class="step-row">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <strong>HTML 파일 업로드</strong> — 로컬 파일을 버킷 안에 저장
+        <div class="cmd">PutObjectCommand → ai_clean_check.html → S3 버킷 내부</div>
+        <div class="result">결과: URL로 접속하면 이 파일이 브라우저에 전달됨</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── C. URL 생성 원리 ── -->
+<div class="section">
+  <div class="section-title">C. URL(주소)이 만들어지는 원리</div>
+
+  <div class="url-breakdown">
+    <div class="url-line">http://ai-clean-check-2026.s3-website.ap-northeast-2.amazonaws.com</div>
+    <div class="url-part"><span class="tag">버킷명</span> <code>ai-clean-check-2026</code> — 내가 지정한 이름. 전 세계에서 유일해야 함</div>
+    <div class="url-part"><span class="tag">서비스</span> <code>s3-website</code> — "이 버킷은 정적 웹 호스팅 중"을 나타내는 AWS 고정 키워드</div>
+    <div class="url-part"><span class="tag">리전</span> <code>ap-northeast-2</code> — 서울 리전. 실제 파일이 저장된 AWS 데이터센터 위치</div>
+    <div class="url-part"><span class="tag">도메인</span> <code>amazonaws.com</code> — AWS 소유 도메인</div>
+  </div>
+
+  <div class="info">
+    💡 <strong>IP가 아닌 이유:</strong> 이 URL은 고정 IP가 아니라 <strong>DNS 이름</strong>입니다.
+    브라우저가 이 주소를 입력하면 AWS의 DNS 서버가 실제 서버 IP로 변환해 연결합니다.
+    AWS 내부 IP는 수시로 바뀔 수 있지만 URL은 항상 같게 유지됩니다.
+    버킷명을 바꾸면 URL도 바뀌고, 버킷명이 같으면 언제나 같은 URL이 생성됩니다.
+  </div>
+</div>
+
+<!-- ── D. 켜기/끄기 ── -->
+<div class="section">
+  <div class="section-title">D. 켜기 / 끄기</div>
+  <div class="cmd-row">
+    <div class="card card-on">
+      <div class="label">▶ 켜기 · 배포 · 수정 반영</div>
+      <pre>node deploy.js</pre>
+      <div class="desc">B의 1~5단계를 자동 실행.<br>이미 버킷이 있으면 생성을 건너뛰고<br>설정 복원 + 파일 업로드만 수행.</div>
+    </div>
+    <div class="card card-off">
+      <div class="label">⏹ 끄기 (파일은 S3에 보존)</div>
+      <pre>node site-off.js</pre>
+      <div class="desc">버킷 정책 삭제 + 웹 호스팅 비활성화.<br>URL 접속 시 403 오류 표시.<br>파일은 삭제되지 않으므로 켜기 즉시 복구.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── E. 다른 HTML 배포 ── -->
+<div class="section">
+  <div class="section-title">E. 다른 HTML 파일을 배포할 때</div>
+  <p>
+    <a href="deploy.js">deploy.js</a> 상단의 <code>FILE</code> 값만 바꾸고 실행하면 됩니다.
+  </p>
+  <div style="background:#1e1e2e;color:#cdd6f4;font-family:'Consolas',monospace;font-size:12px;padding:10px 14px;border-radius:6px;margin-top:8px;">
+    <span style="color:#89b4fa;">const</span> FILE = <span style="color:#a6e3a1;">'./다른파일.html'</span>; &nbsp;
+    <span style="color:#6c7086;">// ← 이 줄만 변경</span>
+  </div>
+</div>
+
+<footer>
+  Claude Code 생성 &nbsp;|&nbsp; 2026-05-20 &nbsp;|&nbsp;
+  브라우저에서 열고 <strong>Ctrl+P → PDF로 저장</strong>
+</footer>
+
+</body>
+</html>

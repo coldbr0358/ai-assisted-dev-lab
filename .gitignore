@@ -15,6 +15,11 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
+# AWS 키페어 및 인증서
+*.pem
+*.key
+aws-exports.js
+
 # OS / editor
 .DS_Store
 Thumbs.db

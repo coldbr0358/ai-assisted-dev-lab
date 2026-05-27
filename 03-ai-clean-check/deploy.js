@@ -9,11 +9,14 @@ import {
   HeadBucketCommand,
 } from '@aws-sdk/client-s3';
 import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 
 // ── 설정 ──────────────────────────────────────────────────────
+const __dirname = dirname(fileURLToPath(import.meta.url));
 const BUCKET  = process.env.AWS_BUCKET_NAME || 'ai-clean-check-2026';
 const REGION  = 'ap-northeast-2';
-const FILE    = './ai_clean_check.html';
+const FILE    = join(__dirname, 'ai_clean_check.html'); // 스크립트 위치 기준 경로
 
 const s3 = new S3Client({
   region: REGION,

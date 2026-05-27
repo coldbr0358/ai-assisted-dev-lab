@@ -1,0 +1,56 @@
+#!/bin/bash
+# .githooks/pre-push
+# GitHub push 전 시크릿 누출 자동 검사
+# ─────────────────────────────────────────────────────────────────
+# 설치: npm run prepare  (git config core.hooksPath .githooks)
+# 건너뛰기(긴급 시 비추천): git push --no-verify
+# ─────────────────────────────────────────────────────────────────
+
+PATTERNS=(
+  'sk-ant-api[0-9a-zA-Z-]{20,}'   # Anthropic API key
+  'AKIA[0-9A-Z]{16}'               # AWS Access Key ID
+)
+
+BLOCKED=0
+
+while read local_ref local_sha remote_ref remote_sha; do
+  # 삭제 push (로컬 브랜치 삭제) 는 건너뜀
+  [ "$local_sha" = "0000000000000000000000000000000000000000" ] && continue
+
+  if [ "$remote_sha" = "0000000000000000000000000000000000000000" ]; then
+    # 새 브랜치: HEAD까지 전체 커밋 검사
+    RANGE="$local_sha"
+  else
+    # 기존 브랜치: remote에 없는 새 커밋만 검사
+    RANGE="$remote_sha..$local_sha"
+  fi
+
+  for pattern in "${PATTERNS[@]}"; do
+    if git log --format="" -p "$RANGE" 2>/dev/null | grep -qE "$pattern"; then
+      echo ""
+      echo "🚨 [보안 경고] 시크릿 키 패턴 감지!"
+      echo "   패턴: $pattern"
+      echo "   커밋 범위: $RANGE"
+      echo "   → push 차단됨. 해당 커밋에서 키를 제거한 뒤 다시 push 하세요."
+      echo ""
+      BLOCKED=1
+    fi
+  done
+done
+
+# .env 파일 자체가 git에 추적되고 있는지 확인
+if git ls-files --error-unmatch .env 2>/dev/null; then
+  echo ""
+  echo "🚨 [보안 경고] .env 파일이 git에 추적되고 있습니다!"
+  echo "   실행: git rm --cached .env"
+  echo "   그 다음 다시 push 하세요."
+  echo ""
+  BLOCKED=1
+fi
+
+if [ "$BLOCKED" -eq 0 ]; then
+  echo "✅ 보안 검사 통과: 시크릿 누출 없음"
+  exit 0
+else
+  exit 1
+fi

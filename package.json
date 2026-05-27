@@ -4,6 +4,7 @@
   "description": "AI 도구(Claude Code 등)를 활용한 개발 실습 포트폴리오 저장소",
   "type": "module",
   "scripts": {
+    "prepare": "git config core.hooksPath .githooks",
     "claude-api": "node 02-claude-api/index.js",
     "deploy": "node 03-ai-clean-check/deploy.js",
     "site-off": "node 03-ai-clean-check/site-off.js"

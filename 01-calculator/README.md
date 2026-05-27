@@ -1,4 +1,4 @@
-# 01 · Python 계산기 (hook test)
+# 01 · Python 계산기
 
 > Claude Code를 활용해 TDD 방식으로 개발한 첫 번째 실습 프로젝트
 

@@ -1,20 +1,20 @@
 {
-  "name": "claude_code_test",
+  "name": "ai-assisted-dev-lab",
   "version": "1.0.0",
-  "description": "This repository documents my development practice projects using Claude Code and other AI-assisted tools.",
-  "main": "index.js",
+  "description": "AI 도구(Claude Code 등)를 활용한 개발 실습 포트폴리오 저장소",
+  "type": "module",
   "scripts": {
-    "start": "node index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "claude-api": "node 02-claude-api/index.js",
+    "deploy": "node 03-ai-clean-check/deploy.js",
+    "site-off": "node 03-ai-clean-check/site-off.js"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/coldbr0358/ai-assisted-dev-lab.git"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": ["claude", "anthropic", "aws", "python", "portfolio"],
+  "author": "ChanHyoung Lim",
   "license": "ISC",
-  "type": "module",
   "bugs": {
     "url": "https://github.com/coldbr0358/ai-assisted-dev-lab/issues"
   },

@@ -1,26 +1,38 @@
-# Environment variables
+# ── 환경 변수 (절대 커밋 금지) ──────────────────────────────────
 .env
 .env.*
+!.env.example
 
-# Dependencies
+# ── Node.js 의존성 ────────────────────────────────────────────
 node_modules/
-
-# Claude Code local files
-.claude/
-
-# Logs
-*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+*.log
 
-# AWS 키페어 및 인증서
+# ── Python ────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+
+# ── AWS / 인증 정보 ──────────────────────────────────────────
 *.pem
 *.key
 aws-exports.js
+credentials
 
-# OS / editor
+# ── Claude Code ───────────────────────────────────────────────
+.claude/
+
+# ── OS / 에디터 ───────────────────────────────────────────────
 .DS_Store
 Thumbs.db
 .vscode/
+.idea/
+*.swp

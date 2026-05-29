@@ -100,8 +100,24 @@ async function deploy() {
 
   // 결과
   const url = `http://${BUCKET}.s3-website.${REGION}.amazonaws.com`;
+  console.log('\n⏳ 사이트 활성화 대기 중', { end: '' });
+  await waitForSite(url);
   console.log(`\n🎉 배포 완료!`);
   console.log(`   접속 URL: ${url}\n`);
+}
+
+async function waitForSite(url, maxWaitMs = 30000) {
+  const start = Date.now();
+  process.stdout.write('⏳ 사이트 활성화 대기 중');
+  while (Date.now() - start < maxWaitMs) {
+    try {
+      const res = await fetch(url);
+      if (res.ok) { process.stdout.write(' ✅\n'); return; }
+    } catch {}
+    process.stdout.write('.');
+    await new Promise(r => setTimeout(r, 2000));
+  }
+  process.stdout.write(' (30초 초과 — URL 직접 확인 필요)\n');
 }
 
 deploy().catch(err => {

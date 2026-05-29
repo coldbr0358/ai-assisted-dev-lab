@@ -102,7 +102,8 @@ async function deploy() {
   const url = `http://${BUCKET}.s3-website.${REGION}.amazonaws.com`;
   await waitForSite(url);
   console.log(`\n🎉 배포 완료!`);
-  console.log(`   접속 URL: ${url}\n`);
+  console.log(`   접속 URL: ${url}`);
+  console.log(`   종료하려면: node site-off.js\n`);
 }
 
 async function waitForSite(url, maxWaitMs = 30000) {

@@ -100,7 +100,6 @@ async function deploy() {
 
   // 결과
   const url = `http://${BUCKET}.s3-website.${REGION}.amazonaws.com`;
-  console.log('\n⏳ 사이트 활성화 대기 중', { end: '' });
   await waitForSite(url);
   console.log(`\n🎉 배포 완료!`);
   console.log(`   접속 URL: ${url}\n`);

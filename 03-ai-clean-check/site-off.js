@@ -19,7 +19,7 @@ async function off() {
   await s3.send(new DeleteBucketPolicyCommand({ Bucket: BUCKET }));
   await s3.send(new DeleteBucketWebsiteCommand({ Bucket: BUCKET }));
   console.log('✅ 사이트 비공개 처리 완료 (파일은 S3에 보존)');
-  console.log('   다시 켜려면: node deploy.js\n');
+  console.log('   다시 켜려면: node site-on.js\n');
 }
 
 off().catch(err => console.error('❌', err.message));

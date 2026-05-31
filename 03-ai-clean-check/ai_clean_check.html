@@ -809,7 +809,7 @@
   // ── Screen 4: Results ─────────────────────────────────────────────────────
   function ResultsScreen({ text, purposes, sentenceUsage, onNext }) {
     const { score, level } = calcRisk(text, purposes, sentenceUsage);
-    const cards = calcCards(purposes, sentenceUsage);
+    const cards = calcCards(text, purposes, sentenceUsage);
     const [animated, setAnimated] = useState(false);
     useEffect(() => { setTimeout(() => setAnimated(true), 100); }, []);
 

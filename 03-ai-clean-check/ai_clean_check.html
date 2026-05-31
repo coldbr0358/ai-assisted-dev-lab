@@ -303,6 +303,16 @@
     if (purposes.includes('번역'))           s += 7;
     if (purposes.includes('아이디어 정리')) s += 5;
     if (text.length < 100) s += 12;
+    // 텍스트 AI 패턴 감지 보정 (최대 +12점)
+    if (text.length > 100) {
+      const aiTransitions = ['따라서', '또한', '결국', '반대로', '반면에', '더불어', '나아가', '이와 함께', '이를 위해'];
+      const aiEndings    = ['해야 한다', '필요가 있다', '이루어져야 한다', '중요하다', '필요하다', '강조된다'];
+      const tc = aiTransitions.filter(p => text.includes(p)).length;
+      const ec = aiEndings.filter(p => text.includes(p)).length;
+      if (tc >= 3 && ec >= 2) s += 12;
+      else if (tc >= 2 || ec >= 2) s += 6;
+      else if (tc >= 1 && ec >= 1) s += 3;
+    }
     s = Math.min(s, 100);
     return { score: s, level: scoreToLevel(s) };
   }

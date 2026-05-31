@@ -292,53 +292,74 @@
   }
 
   function calcRisk(text, purposes, sentenceUsage) {
-    if (purposes.includes('사용하지 않음')) return { score: 5, level: 'very-safe' };
+    if (!text || text.trim().length < 50) return { score: 0, level: 'very-safe' };
     let s = 0;
-    if (sentenceUsage === '대부분 사용함') s += 55;
-    else if (sentenceUsage === '일부 사용함') s += 30;
-    if (purposes.includes('초안 작성'))     s += 38;
-    if (purposes.includes('자료 조사'))     s += 14;
-    if (purposes.includes('요약'))           s += 11;
-    if (purposes.includes('문장 다듬기'))   s += 9;
-    if (purposes.includes('번역'))           s += 7;
-    if (purposes.includes('아이디어 정리')) s += 5;
-    if (text.length < 100) s += 12;
-    // 텍스트 AI 패턴 감지 보정 (최대 +12점)
-    if (text.length > 100) {
-      const aiTransitions = ['따라서', '또한', '결국', '반대로', '반면에', '더불어', '나아가', '이와 함께', '이를 위해'];
-      const aiEndings    = ['해야 한다', '필요가 있다', '이루어져야 한다', '중요하다', '필요하다', '강조된다'];
-      const tc = aiTransitions.filter(p => text.includes(p)).length;
-      const ec = aiEndings.filter(p => text.includes(p)).length;
-      if (tc >= 3 && ec >= 2) s += 12;
-      else if (tc >= 2 || ec >= 2) s += 6;
-      else if (tc >= 1 && ec >= 1) s += 3;
+    const sentences = text.split(/[.!?\n]+/).map(v => v.trim()).filter(v => v.length > 10);
+
+    // 1. AI 연결어 밀도 (최대 25점)
+    const connectors = ['따라서', '또한', '결국', '반면에', '반대로', '더불어', '나아가',
+                        '이를 통해', '이와 같이', '이러한', '이처럼', '이에 따라', '한편', '뿐만 아니라'];
+    s += Math.min(connectors.filter(p => text.includes(p)).length * 4, 25);
+
+    // 2. 정형화된 결말 표현 (최대 20점)
+    const endings = ['해야 한다', '필요가 있다', '이루어져야 한다', '중요하다', '필요하다',
+                     '할 수 있다', '볼 수 있다', '것으로 보인다', '생각된다', '라고 할 수 있다'];
+    s += Math.min(endings.filter(p => text.includes(p)).length * 4, 20);
+
+    // 3. 모호한 수식어 (최대 15점)
+    const vague = ['다양한', '효과적으로', '매우 중요', '긍정적인', '부정적인', '적극적으로', '체계적으로', '전반적으로'];
+    s += Math.min(vague.filter(p => text.includes(p)).length * 4, 15);
+
+    // 4. 1인칭 표현 부재 (최대 10점)
+    const personal = ['나는', '나의', '저는', '저의', '우리가', '우리는', '제가', '내가'];
+    if (!personal.some(p => text.includes(p))) s += 10;
+
+    // 5. 문장 길이 균일성 (최대 15점)
+    if (sentences.length >= 4) {
+      const lens = sentences.map(v => v.length);
+      const avg = lens.reduce((a, b) => a + b, 0) / lens.length;
+      const cv = Math.sqrt(lens.reduce((a, b) => a + Math.pow(b - avg, 2), 0) / lens.length) / (avg || 1);
+      if (cv < 0.3) s += 15;
+      else if (cv < 0.5) s += 8;
+      else if (cv < 0.7) s += 3;
     }
-    s = Math.min(s, 100);
-    return { score: s, level: scoreToLevel(s) };
+
+    // 6. 구조화된 단락 패턴 (최대 10점)
+    const paras = text.split(/\n\s*\n/).filter(p => p.trim().length > 30);
+    if (paras.length >= 4) s += 10;
+    else if (paras.length >= 3) s += 6;
+    else if (paras.length >= 2) s += 3;
+
+    // 7. 긴 문장 비율 (최대 5점)
+    s += Math.round((sentences.filter(v => v.length > 70).length / Math.max(sentences.length, 1)) * 5);
+
+    return { score: Math.min(Math.round(s), 100), level: scoreToLevel(Math.min(Math.round(s), 100)) };
   }
 
-  function calcCards(purposes, sentenceUsage) {
-    const none = purposes.includes('사용하지 않음');
-    let aiDep = 0, citRisk = 0, refRisk = 0, rep = 0;
-    if (!none) {
-      if (sentenceUsage === '대부분 사용함') aiDep = 85;
-      else if (sentenceUsage === '일부 사용함') aiDep = 45;
-      else aiDep = 10;
-      if (purposes.includes('초안 작성')) aiDep = Math.min(aiDep + 15, 100);
-      if (purposes.includes('자료 조사')) citRisk += 35;
-      if (purposes.includes('요약'))      citRisk += 20;
-      if (sentenceUsage === '대부분 사용함') citRisk += 25;
-      else if (sentenceUsage === '일부 사용함') citRisk += 12;
-      citRisk = Math.min(citRisk, 100);
-      if (purposes.includes('자료 조사')) refRisk += 40;
-      if (purposes.includes('요약'))      refRisk += 20;
-      if (sentenceUsage !== '아니오')     refRisk += 15;
-      refRisk = Math.min(refRisk, 100);
-      if (purposes.includes('문장 다듬기')) rep += 20;
-      if (purposes.includes('초안 작성'))   rep += 25;
-      if (sentenceUsage === '대부분 사용함') rep += 30;
-      rep = Math.min(rep, 100);
+  function calcCards(text, purposes, sentenceUsage) {
+    if (!text || text.trim().length < 50) {
+      return { aiDep: 0, citRisk: 0, ownThought: 100, refRisk: 0, rep: 0 };
     }
+    const sentences = text.split(/[.!?\n]+/).map(v => v.trim()).filter(v => v.length > 10);
+
+    // AI 문장 의존도
+    const connPats = ['따라서', '또한', '이러한', '이처럼', '결국', '이를 통해', '나아가', '더불어'];
+    const aiDep = Math.min(
+      Math.round((sentences.filter(v => connPats.some(p => v.includes(p))).length / Math.max(sentences.length, 1)) * 130),
+      100
+    );
+
+    // 출처 누락 위험
+    const hasSpecific = /\d+/.test(text) || ['연구에 따르면', '에 의하면', '조사에 따르면'].some(p => text.includes(p));
+    const citRisk = hasSpecific ? 35 : 68;
+
+    // 참고문헌 신뢰도 위험
+    const hasRef = ['연구', '논문', '학자', '보고서'].some(p => text.includes(p));
+    const refRisk = hasRef ? 60 : 28;
+
+    // 문장 반복성
+    const rep = Math.min(['해야 한다', '할 수 있다', '필요하다', '것이다', '있다'].filter(p => text.includes(p)).length * 16, 85);
+
     return { aiDep, citRisk, ownThought: Math.max(100 - aiDep - 5, 5), refRisk, rep };
   }
 
